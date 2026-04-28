@@ -327,6 +327,17 @@
     transform: scale(0.97);
   }
 
+  /* منع ظهور الأرقام العربية في حقل المبلغ */
+  input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
   @media print {
     body, body.light-mode, body.dark-mode {
       background: white;
@@ -385,11 +396,11 @@
     <div class="input-group">
       <div class="field">
         <label>👤 اسم الطالب</label>
-        <input id="name" placeholder="مثال: يوسف أحمد" autocomplete="off">
+        <input id="name" placeholder="مثال: يوسف أحمد" autocomplete="off" inputmode="text">
       </div>
       <div class="field">
         <label>💰 المبلغ المدفوع (جنيه مصري)</label>
-        <input id="paid" type="number" placeholder="0" value="0">
+        <input id="paid" type="number" placeholder="0" value="0" inputmode="numeric" pattern="[0-9]*">
       </div>
       <div class="field" style="flex:0.4; min-width:100px;">
         <label>&nbsp;</label>
@@ -400,7 +411,7 @@
 
   <div class="card">
     <div class="filter-row">
-      <input id="search" placeholder="🔍 بحث باسم الطالب ..." oninput="render()" autocomplete="off">
+      <input id="search" placeholder="🔍 بحث باسم الطالب ..." oninput="render()" autocomplete="off" inputmode="text">
       <select id="filter" onchange="render()">
         <option value="all">📋 الكل</option>
         <option value="paid">✅ دفع كامل</option>
@@ -547,7 +558,10 @@
         if (s.free) {
           rowClass = "free";
           nameHtml = `<span class="student-name">🎓 ${escapeHtml(s.name)} <span class="badge">مجاني</span></span>`;
-          statusHtml = `<span style="font-weight:500;">✅ بدون رسوم</span>`;
+          statusHtml = `<div class="student-status">
+                          <span style="font-weight:500;">✅ بدون رسوم</span>
+                          <button class="delete-btn" onclick="deleteStudent(${originalIdx})">🗑 حذف</button>
+                        </div>`;
         }
         else if (s.credit > 0 && !s.received) {
           rowClass = "credit";
@@ -585,7 +599,7 @@
 
         let row = document.createElement("div");
         row.className = `student-row ${rowClass}`;
-        row.innerHTML = `<div>${nameHtml}</div><div class="student-status">${statusHtml}</div>`;
+        row.innerHTML = `<div>${nameHtml}</div><div>${statusHtml}</div>`;
         listDiv.appendChild(row);
       });
     }
