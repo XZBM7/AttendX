@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>AttendX</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', 'Tahoma', 'Cairo', system-ui, sans-serif;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.15s ease;
+  }
+
+  body.light-mode {
+    background-color: #f1f5f9;
+  }
+  body.dark-mode {
+    background-color: #0f172a;
+  }
+
+  body {
+    padding: 20px 14px 50px 14px;
+  }
+
+  .app-container {
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .theme-toggle {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 16px;
+  }
+  .theme-btn {
+    background: transparent;
+    border: 1px solid;
+    border-radius: 60px;
+    padding: 8px 18px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    cursor: pointer;
+    width: auto;
+    box-shadow: none;
+  }
+  body.light-mode .theme-btn {
+    background: #e2e8f0;
+    border-color: #cbd5e1;
+    color: #1e293b;
+  }
+  body.dark-mode .theme-btn {
+    background: #334155;
+    border-color: #475569;
+    color: #f1f5f9;
+  }
+
+  .card {
+    border-radius: 28px;
+    padding: 22px 20px;
+    margin-bottom: 22px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s;
+  }
+  body.light-mode .card {
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+  body.dark-mode .card {
+    background: #1e293b;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  }
+
+  h2 {
+    font-size: 1.45rem;
+    font-weight: 700;
+    margin-bottom: 18px;
+    border-right: 5px solid #eab308;
+    padding-right: 16px;
+  }
+  body.light-mode h2 {
+    color: #0f172a;
+  }
+  body.dark-mode h2 {
+    color: #f1f5f9;
+  }
+
+  .input-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    align-items: flex-end;
+  }
+  .field {
+    flex: 1;
+    min-width: 140px;
+  }
+  .field label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+    letter-spacing: 0.5px;
+  }
+  body.light-mode .field label {
+    color: #475569;
+  }
+  body.dark-mode .field label {
+    color: #94a3b8;
+  }
+
+  input, select, button {
+    border-radius: 60px;
+    padding: 12px 18px;
+    font-size: 0.95rem;
+    outline: none;
+    width: 100%;
+  }
+  body.light-mode input, body.light-mode select {
+    background: white;
+    border: 1px solid #cbd5e1;
+    color: #0f172a;
+  }
+  body.dark-mode input, body.dark-mode select {
+    background: #0f172a;
+    border: 1px solid #334155;
+    color: #f8fafc;
+  }
+  input:focus, select:focus {
+    border-color: #eab308;
+    box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.2);
+  }
+  button {
+    background: #eab308;
+    color: #0f172a;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+  }
+  button:active {
+    transform: scale(0.97);
+    background: #ca8a04;
+  }
+
+  .filter-row {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .filter-row input, .filter-row select {
+    flex: 1;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 16px;
+  }
+  .stat-card {
+    border-radius: 26px;
+    padding: 16px 12px;
+    text-align: center;
+  }
+  body.light-mode .stat-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+  }
+  body.dark-mode .stat-card {
+    background: #0f172a;
+    border: 1px solid #334155;
+  }
+  .stat-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+  }
+  body.light-mode .stat-label {
+    color: #475569;
+  }
+  body.dark-mode .stat-label {
+    color: #94a3b8;
+  }
+  .stat-number {
+    font-size: 1.9rem;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-top: 8px;
+  }
+  body.light-mode .stat-number {
+    color: #0f172a;
+  }
+  body.dark-mode .stat-number {
+    color: #facc15;
+  }
+  .stat-number small {
+    font-size: 0.9rem;
+  }
+
+  .chart-wrapper {
+    border-radius: 24px;
+    padding: 12px 6px;
+    margin-top: 6px;
+  }
+  body.light-mode .chart-wrapper {
+    background: #f8fafc;
+  }
+  body.dark-mode .chart-wrapper {
+    background: #0f172a;
+  }
+  canvas {
+    max-height: 260px;
+    width: 100%;
+  }
+
+  .students-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .student-row {
+    border-radius: 22px;
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  body.light-mode .student-row {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+  }
+  body.dark-mode .student-row {
+    background: #0f172a;
+    border: 1px solid #334155;
+  }
+  .paid { border-right: 4px solid #10b981; }
+  .debt { border-right: 4px solid #ef4444; }
+  .credit { border-right: 4px solid #3b82f6; }
+  .free { border-right: 4px solid #a855f7; }
+  .credit-received { border-right: 4px solid #6b7280; }
+
+  .student-name {
+    font-weight: 700;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  body.light-mode .student-name {
+    color: #0f172a;
+  }
+  body.dark-mode .student-name {
+    color: #e2e8f0;
+  }
+  .badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 40px;
+  }
+  body.light-mode .badge {
+    background: #e2e8f0;
+    color: #1e293b;
+  }
+  body.dark-mode .badge {
+    background: #1e293b;
+    color: #cbd5e1;
+  }
+  .student-status {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .recv-btn {
+    background: #10b981;
+    color: white;
+    border: none;
+    border-radius: 40px;
+    padding: 6px 18px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    cursor: pointer;
+    width: auto;
+  }
+  .delete-btn {
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 40px;
+    padding: 6px 18px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    cursor: pointer;
+    width: auto;
+  }
+  .delete-btn:hover {
+    background: #dc2626;
+  }
+  .export-buttons {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+  }
+  .btn-outline {
+    background: transparent;
+    border: 1px solid;
+    font-weight: 600;
+  }
+  body.light-mode .btn-outline {
+    border-color: #cbd5e1;
+    color: #334155;
+  }
+  body.dark-mode .btn-outline {
+    border-color: #475569;
+    color: #cbd5e1;
+  }
+  .btn-outline:active {
+    transform: scale(0.97);
+  }
+
+  @media print {
+    body, body.light-mode, body.dark-mode {
+      background: white;
+      padding: 0;
+      margin: 0;
+    }
+    .theme-toggle, .export-buttons, .filter-row, .input-group button, .recv-btn, .delete-btn {
+      display: none !important;
+    }
+    .card {
+      background: white;
+      box-shadow: none;
+      border: 1px solid #ccc;
+      break-inside: avoid;
+    }
+    .stat-card {
+      background: #f9f9f9;
+      border: 1px solid #aaa;
+    }
+    .stat-number {
+      color: #0f172a;
+    }
+    .student-row {
+      background: white;
+      border: 1px solid #aaa;
+    }
+    h2 {
+      color: #0f172a;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .stats-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .student-row {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .student-status {
+      width: 100%;
+      justify-content: space-between;
+    }
+  }
+</style>
+</head>
+<body class="light-mode">
+<div class="app-container">
+
+  <div class="theme-toggle">
+    <button class="theme-btn" onclick="toggleTheme()" id="themeToggleBtn">🌙 دارك مود</button>
+  </div>
+
+  <div class="card">
+    <h2>➕ إضافة طالب جديد</h2>
+    <div class="input-group">
+      <div class="field">
+        <label>👤 اسم الطالب</label>
+        <input id="name" placeholder="مثال: يوسف أحمد" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>💰 المبلغ المدفوع (جنيه مصري)</label>
+        <input id="paid" type="number" placeholder="0" value="0">
+      </div>
+      <div class="field" style="flex:0.4; min-width:100px;">
+        <label>&nbsp;</label>
+        <button onclick="addStudent()">إضافة +</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="filter-row">
+      <input id="search" placeholder="🔍 بحث باسم الطالب ..." oninput="render()" autocomplete="off">
+      <select id="filter" onchange="render()">
+        <option value="all">📋 الكل</option>
+        <option value="paid">✅ دفع كامل</option>
+        <option value="debt">⚠️ عليه باقي</option>
+        <option value="credit">💸 له رصيد إضافي (غير مستلم)</option>
+        <option value="free">🎓 مجاني</option>
+        <option value="all_credit">💰 كل من له رصيد (سواء استلم أو لا)</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="report">
+    <div class="card stats-grid">
+      <div class="stat-card"><div class="stat-label">👨‍🎓 عدد الطلاب</div><div class="stat-number" id="present">0</div></div>
+      <div class="stat-card"><div class="stat-label">📘 المفروض الكلي</div><div class="stat-number" id="fixed">0 <small>ج.م</small></div></div>
+      <div class="stat-card"><div class="stat-label">💵 إجمالي المدفوع</div><div class="stat-number" id="paidTotal">0 <small>ج.م</small></div></div>
+      <div class="stat-card"><div class="stat-label">⚠️ إجمالي الباقي</div><div class="stat-number" id="debtTotal">0 <small>ج.م</small></div></div>
+      <div class="stat-card"><div class="stat-label">🟢 الرصيد الزائد (الكلي)</div><div class="stat-number" id="creditTotal">0 <small>ج.م</small></div></div>
+    </div>
+
+    <div class="card">
+      <h2>📋 سجل الطلاب والمستحقات</h2>
+      <div id="list" class="students-list"></div>
+    </div>
+
+    <div class="card">
+      <h2>📊 التحليل المالي (بالجنيه المصري)</h2>
+      <div class="chart-wrapper">
+        <canvas id="chart" width="400" height="220" style="max-width:100%; height:auto;"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="card export-buttons" style="justify-content: space-between;">
+    <button onclick="exportExcel()" style="background:#2d6a4f; color:white; flex:1;">📎 تصدير Excel</button>
+    <button onclick="exportPDF()" style="background:#b91c1c; color:white; flex:1;">📄 PDF (تقرير كامل)</button>
+  </div>
+</div>
+
+<script>
+  const PRICE = 70;
+  let students = JSON.parse(localStorage.getItem("students")) || [];
+  let chartInstance = null;
+
+  function saveData() {
+    localStorage.setItem("students", JSON.stringify(students));
+  }
+
+  function addStudent() {
+    let nameField = document.getElementById("name");
+    let paidField = document.getElementById("paid");
+    let name = nameField.value.trim();
+    let paidVal = parseInt(paidField.value) || 0;
+
+    if (name === "") {
+      alert("الرجاء إدخال اسم الطالب");
+      return;
+    }
+
+    let free = (paidVal === 0);
+    let debt = 0;
+    let credit = 0;
+
+    if (!free) {
+      if (paidVal < PRICE) debt = PRICE - paidVal;
+      else if (paidVal > PRICE) credit = paidVal - PRICE;
+    }
+
+    students.push({
+      name: name,
+      paid: paidVal,
+      debt: debt,
+      credit: credit,
+      free: free,
+      received: false
+    });
+
+    saveData();
+    render();
+    nameField.value = "";
+    paidField.value = "";
+    nameField.focus();
+  }
+
+  function deleteStudent(index) {
+    let studentName = students[index].name;
+    let confirmDelete = confirm(`⚠️ هل أنت متأكد من حذف الطالب "${studentName}"؟\nسيتم حذف جميع بياناته نهائياً.`);
+    if (confirmDelete) {
+      students.splice(index, 1);
+      saveData();
+      render();
+    }
+  }
+
+  function markReceived(index) {
+    if (students[index] && students[index].credit > 0 && !students[index].received) {
+      students[index].received = true;
+      saveData();
+      render();
+    }
+  }
+
+  function render() {
+    let searchTerm = document.getElementById("search").value.toLowerCase();
+    let filterVal = document.getElementById("filter").value;
+
+    let totalPaid = 0, totalDebt = 0, totalCredit = 0;
+
+    students.forEach(s => {
+      totalPaid += s.paid;
+      if (!s.free) totalDebt += s.debt;
+      totalCredit += s.credit;
+    });
+
+    let filtered = students.filter((student) => {
+      let matchName = student.name.toLowerCase().includes(searchTerm);
+      if (!matchName) return false;
+
+      if (filterVal === "all") return true;
+      if (filterVal === "paid") {
+        if (student.free) return false;
+        let fullyPaid = (student.debt === 0 && (student.credit === 0 || student.received === true));
+        return fullyPaid;
+      }
+      if (filterVal === "debt") return (!student.free && student.debt > 0);
+      if (filterVal === "credit") return (student.credit > 0 && !student.received);
+      if (filterVal === "free") return student.free === true;
+      if (filterVal === "all_credit") return student.credit > 0;
+      return true;
+    });
+
+    let listDiv = document.getElementById("list");
+    listDiv.innerHTML = "";
+
+    if (filtered.length === 0) {
+      listDiv.innerHTML = `<div style="text-align:center; padding:32px; color:#94a3b8;">✖️ لا يوجد طلاب مطابقين</div>`;
+    } else {
+      filtered.forEach((s) => {
+        let originalIdx = students.findIndex(st => st.name === s.name && st.paid === s.paid && st.debt === s.debt && st.credit === s.credit && st.free === s.free && st.received === s.received);
+        let rowClass = "";
+        let nameHtml = "";
+        let statusHtml = "";
+
+        if (s.free) {
+          rowClass = "free";
+          nameHtml = `<span class="student-name">🎓 ${escapeHtml(s.name)} <span class="badge">مجاني</span></span>`;
+          statusHtml = `<span style="font-weight:500;">✅ بدون رسوم</span>`;
+        }
+        else if (s.credit > 0 && !s.received) {
+          rowClass = "credit";
+          nameHtml = `<span class="student-name">💰 ${escapeHtml(s.name)}</span>`;
+          statusHtml = `<div class="student-status">
+                          <span style="font-weight:bold; background:#3b82f6; color:white; padding:4px 12px; border-radius:30px; font-size:0.75rem;">➕ الرصيد: ${s.credit} ج.م (غير مستلم)</span>
+                          <button class="recv-btn" onclick="markReceived(${originalIdx})">تسليم الزيادة</button>
+                          <button class="delete-btn" onclick="deleteStudent(${originalIdx})">🗑 حذف</button>
+                        </div>`;
+        }
+        else if (s.credit > 0 && s.received) {
+          rowClass = "credit-received";
+          nameHtml = `<span class="student-name">✅ ${escapeHtml(s.name)} <span class="badge" style="background:#6b7280; color:white;">تم التسليم</span></span>`;
+          statusHtml = `<div class="student-status">
+                          <span style="font-weight:bold; color:#6b7280; background:#1e293b; padding:4px 12px; border-radius:30px; font-size:0.75rem;">💰 الرصيد الزائد: ${s.credit} ج.م (تم استلامه)</span>
+                          <button class="delete-btn" onclick="deleteStudent(${originalIdx})">🗑 حذف</button>
+                        </div>`;
+        }
+        else if (s.debt > 0) {
+          rowClass = "debt";
+          nameHtml = `<span class="student-name">⚠️ ${escapeHtml(s.name)}</span>`;
+          statusHtml = `<div class="student-status">
+                          <span style="font-weight:bold; color:#ef4444;">💔 متبقي ${s.debt} ج.م</span>
+                          <button class="delete-btn" onclick="deleteStudent(${originalIdx})">🗑 حذف</button>
+                        </div>`;
+        }
+        else {
+          rowClass = "paid";
+          nameHtml = `<span class="student-name">✔️ ${escapeHtml(s.name)}</span>`;
+          statusHtml = `<div class="student-status">
+                          <span style="color:#10b981;">✅ دفع كامل</span>
+                          <button class="delete-btn" onclick="deleteStudent(${originalIdx})">🗑 حذف</button>
+                        </div>`;
+        }
+
+        let row = document.createElement("div");
+        row.className = `student-row ${rowClass}`;
+        row.innerHTML = `<div>${nameHtml}</div><div class="student-status">${statusHtml}</div>`;
+        listDiv.appendChild(row);
+      });
+    }
+
+    let totalPresent = students.length;
+    let totalFixed = totalPresent * PRICE;
+    document.getElementById("present").innerText = totalPresent;
+    document.getElementById("fixed").innerHTML = totalFixed + `<small> ج.م</small>`;
+    document.getElementById("paidTotal").innerHTML = totalPaid + `<small> ج.م</small>`;
+    document.getElementById("debtTotal").innerHTML = totalDebt + `<small> ج.م</small>`;
+    document.getElementById("creditTotal").innerHTML = totalCredit + `<small> ج.م</small>`;
+
+    drawFinancialChart(totalFixed, totalPaid, totalDebt, totalCredit);
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/[&<>]/g, function(m) {
+      if (m === '&') return '&amp;';
+      if (m === '<') return '&lt;';
+      if (m === '>') return '&gt;';
+      return m;
+    });
+  }
+
+  function drawFinancialChart(fixed, paid, debt, credit) {
+    let ctx = document.getElementById("chart").getContext("2d");
+    if (chartInstance) chartInstance.destroy();
+    let isDark = document.body.classList.contains('dark-mode');
+    let labelColor = isDark ? '#cbd5e1' : '#334155';
+    let gridColor = isDark ? '#334155' : '#e2e8f0';
+    
+    chartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['📘 المفروض', '💰 المدفوع', '⚠️ الباقي', '🟢 إجمالي الرصيد الزائد'],
+        datasets: [{
+          label: 'المبلغ (جنيه مصري)',
+          data: [fixed, paid, debt, credit],
+          backgroundColor: ['#eab308', '#10b981', '#f97316', '#8b5cf6'],
+          borderRadius: 14,
+          barPercentage: 0.7
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: { labels: { color: labelColor, font: { size: 12 } } },
+          tooltip: { callbacks: { label: (ctx) => `${ctx.raw.toFixed(2)} جنيه مصري` } }
+        },
+        scales: {
+          y: { 
+            beginAtZero: true, 
+            title: { display: true, text: 'القيمة (ج.م)', color: labelColor }, 
+            grid: { color: gridColor }, 
+            ticks: { color: labelColor } 
+          },
+          x: { ticks: { color: labelColor, font: { size: 11 } }, grid: { color: gridColor } }
+        }
+      }
+    });
+  }
+
+  function exportExcel() {
+    if (students.length === 0) {
+      alert("لا توجد بيانات للتصدير");
+      return;
+    }
+    let excelRows = students.map(s => {
+      let state = "";
+      if (s.free) state = "مجاني";
+      else if (s.debt > 0) state = `عليه باقي ${s.debt} جنيه`;
+      else if (s.credit > 0 && !s.received) state = `له رصيد ${s.credit} جنيه (لم يستلم)`;
+      else if (s.credit > 0 && s.received) state = `له رصيد ${s.credit} جنيه (تم استلامه)`;
+      else state = "مدفوع بالكامل";
+      return {
+        "اسم الطالب": s.name,
+        "المدفوع (ج.م)": s.paid,
+        "المتبقي عليه (ج.م)": s.debt,
+        "الرصيد الزائد (ج.م)": s.credit,
+        "حالة الرصيد الزائد": s.credit > 0 ? (s.received ? "تم استلامه" : "لم يستلم بعد") : "لا يوجد",
+        "الحالة النهائية": state
+      };
+    });
+    let ws = XLSX.utils.json_to_sheet(excelRows);
+    let wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "تقرير_الحصة");
+    XLSX.writeFile(wb, `نظام_الحصة_${new Date().toISOString().slice(0,19)}.xlsx`);
+  }
+
+  function exportPDF() {
+    const element = document.getElementById("report");
+    if (!element) return;
+
+    let tempRecvBtns = document.querySelectorAll('.recv-btn');
+    let tempDeleteBtns = document.querySelectorAll('.delete-btn');
+    let btnStates = [];
+    tempRecvBtns.forEach((btn, idx) => {
+      btnStates[idx] = btn.style.display;
+      btn.style.display = 'none';
+    });
+    tempDeleteBtns.forEach((btn, idx) => {
+      btnStates[tempRecvBtns.length + idx] = btn.style.display;
+      btn.style.display = 'none';
+    });
+
+    let cloneSection = element.cloneNode(true);
+    let wrapper = document.createElement('div');
+    wrapper.appendChild(cloneSection);
+    wrapper.style.background = 'white';
+    wrapper.style.padding = '20px';
+    wrapper.style.color = '#000';
+    wrapper.style.fontFamily = 'Cairo, sans-serif';
+
+    let printStyles = document.createElement('style');
+    printStyles.textContent = `
+      .student-row { background: #f8fafc; border: 1px solid #ccc; margin-bottom: 8px; }
+      .stat-card { background: #f1f5f9; border: 1px solid #cbd5e1; }
+      .stat-number { color: #0f172a; }
+      .student-name { color: #0f172a; }
+      h2 { color: #0f172a; }
+      .badge { background: #e2e8f0; color: #1e293b; }
+      .recv-btn, .delete-btn { display: none; }
+    `;
+    wrapper.appendChild(printStyles);
+
+    let opt = {
+      margin: [0.5, 0.5, 0.5, 0.5],
+      filename: `تقرير_الطلاب_${new Date().toISOString().slice(0,10)}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2.8, letterRendering: true, backgroundColor: '#ffffff' },
+      jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(wrapper).save().finally(() => {
+      tempRecvBtns.forEach((btn, idx) => {
+        btn.style.display = btnStates[idx];
+      });
+      tempDeleteBtns.forEach((btn, idx) => {
+        btn.style.display = btnStates[tempRecvBtns.length + idx];
+      });
+    });
+  }
+
+  function toggleTheme() {
+    let body = document.body;
+    let btn = document.getElementById("themeToggleBtn");
+    if (body.classList.contains("light-mode")) {
+      body.classList.remove("light-mode");
+      body.classList.add("dark-mode");
+      btn.innerHTML = "☀️ لايت مود";
+      localStorage.setItem("theme", "dark");
+    } else {
+      body.classList.remove("dark-mode");
+      body.classList.add("light-mode");
+      btn.innerHTML = "🌙 دارك مود";
+      localStorage.setItem("theme", "light");
+    }
+    if (chartInstance) {
+      let totalFixed = students.length * PRICE;
+      let totalPaid = students.reduce((sum, s) => sum + s.paid, 0);
+      let totalDebt = students.reduce((sum, s) => sum + (s.free ? 0 : s.debt), 0);
+      let totalCredit = students.reduce((sum, s) => sum + s.credit, 0);
+      drawFinancialChart(totalFixed, totalPaid, totalDebt, totalCredit);
+    }
+  }
+
+  function loadTheme() {
+    let savedTheme = localStorage.getItem("theme");
+    if (savedTheme === "dark") {
+      document.body.classList.remove("light-mode");
+      document.body.classList.add("dark-mode");
+      document.getElementById("themeToggleBtn").innerHTML = "☀️ لايت مود";
+    } else {
+      document.body.classList.remove("dark-mode");
+      document.body.classList.add("light-mode");
+      document.getElementById("themeToggleBtn").innerHTML = "🌙 دارك مود";
+    }
+  }
+
+  window.addStudent = addStudent;
+  window.markReceived = markReceived;
+  window.deleteStudent = deleteStudent;
+  window.render = render;
+  window.exportExcel = exportExcel;
+  window.exportPDF = exportPDF;
+  window.toggleTheme = toggleTheme;
+
+  loadTheme();
+  render();
+</script>
+</body>
+</html>
