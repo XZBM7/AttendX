@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>AttendX</title>
+<title>AttendX | نظام إدارة الطلاب والمستحقات</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
@@ -327,15 +327,9 @@
     transform: scale(0.97);
   }
 
-  /* منع ظهور الأرقام العربية في حقل المبلغ */
-  input[type="number"] {
-    -moz-appearance: textfield;
-    appearance: textfield;
-  }
-  input[type="number"]::-webkit-inner-spin-button,
-  input[type="number"]::-webkit-outer-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
+  input[type="text"].amount-input {
+    direction: ltr;
+    text-align: right;
   }
 
   @media print {
@@ -396,11 +390,11 @@
     <div class="input-group">
       <div class="field">
         <label>👤 اسم الطالب</label>
-        <input id="name" placeholder="مثال: يوسف أحمد" autocomplete="off" inputmode="text">
+        <input id="name" placeholder="مثال: يوسف أحمد" autocomplete="off">
       </div>
       <div class="field">
         <label>💰 المبلغ المدفوع (جنيه مصري)</label>
-        <input id="paid" type="number" placeholder="0" value="0" inputmode="numeric" pattern="[0-9]*">
+        <input type="text" id="paid" class="amount-input" placeholder="0" value="" inputmode="numeric">
       </div>
       <div class="field" style="flex:0.4; min-width:100px;">
         <label>&nbsp;</label>
@@ -411,7 +405,7 @@
 
   <div class="card">
     <div class="filter-row">
-      <input id="search" placeholder="🔍 بحث باسم الطالب ..." oninput="render()" autocomplete="off" inputmode="text">
+      <input id="search" placeholder="🔍 بحث باسم الطالب ..." oninput="render()" autocomplete="off">
       <select id="filter" onchange="render()">
         <option value="all">📋 الكل</option>
         <option value="paid">✅ دفع كامل</option>
@@ -456,15 +450,43 @@
   let students = JSON.parse(localStorage.getItem("students")) || [];
   let chartInstance = null;
 
+  function convertArabicToEnglish(str) {
+    if (!str && str !== 0) return "";
+    const arabicNumbers = {
+      '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
+      '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9'
+    };
+    let result = String(str);
+    for (let arabic in arabicNumbers) {
+      const regex = new RegExp(arabic, 'g');
+      result = result.replace(regex, arabicNumbers[arabic]);
+    }
+    result = result.replace(/[^0-9.-]/g, '');
+    if (result === '' || result === '-') return "";
+    return result;
+  }
+
+  function getValidatedAmount() {
+    let paidField = document.getElementById("paid");
+    let rawValue = paidField.value;
+    if (rawValue === null || rawValue === undefined || rawValue.trim() === "") {
+      return 0;
+    }
+    let englishNumber = convertArabicToEnglish(rawValue);
+    if (englishNumber === "") return 0;
+    let amount = parseInt(englishNumber) || 0;
+    if (amount < 0) amount = 0;
+    return amount;
+  }
+
   function saveData() {
     localStorage.setItem("students", JSON.stringify(students));
   }
 
   function addStudent() {
     let nameField = document.getElementById("name");
-    let paidField = document.getElementById("paid");
     let name = nameField.value.trim();
-    let paidVal = parseInt(paidField.value) || 0;
+    let paidVal = getValidatedAmount();
 
     if (name === "") {
       alert("الرجاء إدخال اسم الطالب");
@@ -492,7 +514,7 @@
     saveData();
     render();
     nameField.value = "";
-    paidField.value = "";
+    document.getElementById("paid").value = "";
     nameField.focus();
   }
 
@@ -779,6 +801,29 @@
       document.getElementById("themeToggleBtn").innerHTML = "🌙 دارك مود";
     }
   }
+
+  document.getElementById("paid").addEventListener("blur", function() {
+    let val = this.value;
+    if (val === null || val.trim() === "") {
+      this.value = "";
+      return;
+    }
+    let converted = convertArabicToEnglish(val);
+    if (converted === "") {
+      this.value = "";
+    } else {
+      let num = parseInt(converted) || 0;
+      this.value = num.toString();
+    }
+  });
+
+  document.getElementById("paid").addEventListener("input", function(e) {
+    let raw = this.value;
+    let englishOnly = convertArabicToEnglish(raw);
+    if (raw !== englishOnly && englishOnly !== "") {
+      this.value = englishOnly;
+    }
+  });
 
   window.addStudent = addStudent;
   window.markReceived = markReceived;
